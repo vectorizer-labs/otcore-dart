@@ -1,7 +1,4 @@
 import 'dart:core';
-import 'dart:html';
-
-import 'OperationResult.dart';
 
 class Operation<T>
 {
@@ -30,17 +27,14 @@ class Operation<T>
   //increment the ID of this operation by one
   Operation roll_revision_forward(){ this.id++; return this; }
 
-  //increment the index by the length of Ob
-  Operation roll_index_forward(int len){ this.index += len; return this; }
+  int length() => this.is_insert ? (this.object as String).length : this.object as int;
 
-  //decrement the index by the length of Ob
-  Operation roll_index_backward(int len){ this.index -= len; return this; }
+  int end() => this.index + this.length();
 
-  //set the index to that of Ob
-  Operation set_index_to_Ob(Operation Ob){ this.index = Ob.index; return this; }
+  Operation set_index(int index){ this.index = index; return this; }
 
   //set the length of a delete operation to 0
-  Operation set_length_to_0(){ this.object = 0 as T; return this;}
+  Operation set_length_to_0() => set_length(0);
 
   Operation set_length(int len){ this.object = len as T; return this; }
 }

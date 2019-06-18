@@ -1,5 +1,3 @@
-import 'dart:html';
-
 import 'Operation.dart';
 import 'OperationResult.dart';
 
@@ -23,52 +21,89 @@ class InclusionTransformation
   {
     //Oa's effect is before Ob so no Transformation needed
     if(Oa.index < Ob.index) return OperationResult.from_single(Oa);
+
     //Oa's effect is after Ob so increment the index to account for Ob 
-    else return OperationResult.from_single(Oa.roll_index_forward(Ob.object.length));
+    else return OperationResult.from_single(Oa.set_index(Oa.index + Ob.length()));
   }
 
   OperationResult IT_ID(Operation Oa, Operation Ob)
   {
     //Oa's effect is before Ob so no Transformation needed
     if(Oa.index <= Ob.index) return OperationResult.from_single(Oa);
-    else if (Oa.index > (Ob.index + Ob.object.length)) return OperationResult.from_single(Oa.roll_index_backward(Ob.object.length));
-    else return OperationResult.from_single(Oa.set_index_to_Ob(Ob));//TODO SAVE_LI
+
+    //Oa's effect is after Ob so we need to roll back the index of Oa by the amount deleted by Ob
+    else if (Oa.index > Ob.end()) return OperationResult.from_single(Oa.set_index(Oa.index - Ob.length()));
+
+    //Oa's effect is in the middle of Ob's delete section
+    //since that section has already been deleted because Ob has been applied to the document
+    //the index reference to the char inside the delete section no longer exists
+    //therefore, we put the index of Oa at the begginning of the deleted section
+    //and we save the real index reference(to a nonexistent character) in SAVE_LI
+    //in case we need to exclude Oa later
+    else return OperationResult.from_single(Oa.set_index(Ob.index));//TODO SAVE_LI
   }
 
   OperationResult IT_DI(Operation Oa, Operation Ob)
   {
-    //Ob comes causally after Oa so no Transformation needed
-    if(Ob.index >= (Oa.index + Oa.object.length)) return OperationResult.from_single(Oa);
-    else if( Oa.index >= Ob.index) return OperationResult.from_single(Oa.roll_index_forward(Ob.object.length));
-    else return split_deletion(Oa,Ob);
-  }
+    //the delete of Oa comes before the insert of Ob so no transformation needed  
+    if(Ob.index >= Oa.end()) return OperationResult.from_single(Oa);
 
-  //creates a split of a delete operation 
-  //in the case that a concurrent operation to this delete is an insert
-  //that happens to be in the middle of our delete operation
-  OperationResult split_deletion(Operation Oa, Operation Ob)
-  {
-    Operation Oa1 = new Operation(false, Ob.index - Oa.index, Oa.index, Oa.id, Oa.time_stamp, Oa.user_id);
-    Operation Oa2 = new Operation(false, Oa.object - (Ob.index - Oa.index), (Ob.index + Ob.object), Oa.id, Oa.time_stamp, Oa.user_id);
-
-    return OperationResult.from_double(Oa1, Oa2);
+    //The delete of Oa comes after the insert of Ob
+    //We have to roll the index of Oa forward to account for Ob
+    else if( Oa.index >= Ob.index) return OperationResult.from_single(Oa.set_index(Oa.index + Ob.length()));
+    else 
+    {
+    //create a split of a delete operation 
+    //in the case that a concurrent operation to this delete is an insert
+    //that happens to be in the middle of our delete operation
+      Operation Oa1 = new Operation(false, Ob.index - Oa.index, Oa.index, Oa.id, Oa.time_stamp, Oa.user_id);
+      Operation Oa2 = new Operation(false, Oa.length() - (Ob.index - Oa.index), Ob.end(), Oa.id, Oa.time_stamp, Oa.user_id);
+      
+      return OperationResult.from_double(Oa1, Oa2);
+    }
   }
 
   OperationResult IT_DD(Operation Oa, Operation Ob)
   {
-    //Oa's effect is before Ob so no Transformation needed
-    if(Ob.index >= (Oa.index + Oa.object)) return OperationResult.from_single(Oa);
-    else if(Oa.index >= (Ob.index + Ob.object)) return OperationResult.from_single(Oa.roll_index_backward(Ob.object));
+    //The delete of Oa is before the delete of Ob so no transformation needed
+    if(Ob.index >= Oa.end()) return OperationResult.from_single(Oa);
+
+    //the start of the delete of Oa is after the delete of Ob
+    //so adjust the index by the length of Ob 
+    else if(Oa.index >= Ob.end()) return OperationResult.from_single(Oa.set_index(Oa.index - Ob.length()));
+
+    //its a cluster-guc of overlapping deletes 
+    //(info is lost no matter what so we must save the original Oa using SAVE_LI)
     else
     {
-      if((Ob.index < Oa.index) && (Oa.index + Oa.object) <= (Ob.index + Ob.object)) OperationResult.from_single(Oa.set_length_to_0());
-      else if((Ob.index <= Oa.index) && (Oa.index + Oa.object) > (Ob.index + Ob.object))
+      //The case where Oa is swallowed inside Ob
+      //i.e. \<------------------------->\Ob
+      //         \<------->\Oa
+      if((Ob.index < Oa.index) && Oa.end() <= Ob.end()) return OperationResult.from_single(Oa.set_length_to_0());
+
+      //The case where Oa starts at the same index as Ob or in the middle of Ob
+      //but Oa ends after Ob ends so we just trim off the beggining thats inside Ob
+      // i.e  \<--------->\Ob
+      //         \<-------\<cut---------->\Oa
+      else if((Ob.index <= Oa.index) && Oa.end() > Ob.end())
       {
-        OperationResult.from_single(Oa.set_index_to_Ob(Ob)
-                       .set_length(Oa.index + Oa.object - (Ob.index + Ob.object)));
+        return OperationResult.from_single(Oa.set_index(Ob.index)
+                              .set_length(Oa.end() - (Ob.end())));
       }
-      else if((Ob.index > Oa.index) && (Ob.index + Ob.object) >= (Oa.index + Oa.object)) return OperationResult.from_single(Oa.set_length(Ob.index - Oa.index));
-      else return OperationResult.from_single(Oa.set_length(Oa.object - Ob.object));//TODO: SAVE_LI
+      
+      //The case where Ob starts inside Oa and ends after or at the same index as Oa
+      //so we just trim off the end thats inside Ob
+      //i.e.          \<------------------------------>\Ob
+      //        \<---------------------------->\ Oa
+      else if((Ob.index > Oa.index) && (Ob.end()) >= (Oa.end())) return OperationResult.from_single(Oa.set_length(Ob.index - Oa.index));
+
+      //The case where Ob is swallowed by Oa
+      //since Ob has already been applied and deleted a sub region of
+      //the region to be deleted by Oa we just shorten Oa by the length of Ob              
+      //i.e.        \<-------------->\ Ob
+      //      \<----\cut----------cut\----->\Oa
+      else return OperationResult.from_single(Oa.set_length(Oa.length() - Ob.length()));
+      //TODO: SAVE_LI
 
     }
 
