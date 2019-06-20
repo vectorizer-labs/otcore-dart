@@ -21,8 +21,6 @@ class OperationResult
   //for the uninitiated: this can only occur when Oa is a delete and Ob is an insert
   static OperationResult from_double(Operation Oa1, Operation Oa2) => new OperationResult(Oa1, Oa2, OperationType.DOUBLE);
 
-  static OperationResult from_single_ra(Operation Oa) => new OperationResult(Oa, null,OperationType.RA);
-
 }
 
 enum OperationType
