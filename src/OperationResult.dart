@@ -4,21 +4,29 @@ class OperationResult
 {
   Operation Oa1;
   Operation Oa2;
-  bool is2;
+  OperationType oType;
 
-  OperationResult(Operation res1, Operation res2, bool is2)
+  OperationResult(Operation res1, Operation res2, OperationType oType)
   {
     this.Oa1 = res1;
     this.Oa2 = res2;
-    is2 = is2;
+    this.oType = oType;
+
   }
 
   //makes a single operation result
-  static OperationResult from_single(Operation res1) => new OperationResult(res1, null, false);
+  static OperationResult from_single(Operation Oa) => new OperationResult(Oa, null, OperationType.SINGLE);
 
   //makes a double operation result
   //for the uninitiated: this can only occur when Oa is a delete and Ob is an insert
-  static OperationResult from_double(Operation res1, Operation res2)=> new OperationResult(res1, res2, true);
+  static OperationResult from_double(Operation Oa1, Operation Oa2) => new OperationResult(Oa1, Oa2, OperationType.DOUBLE);
 
+  static OperationResult from_single_ra(Operation Oa) => new OperationResult(Oa, null,OperationType.RA);
 
+}
+
+enum OperationType
+{
+  SINGLE,
+  DOUBLE
 }

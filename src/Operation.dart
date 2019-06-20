@@ -19,7 +19,14 @@ class Operation<T>
     this.user_id = user_id;
   }
 
+  //check if O is concurrent with this operation
   bool is_concurrent(Operation O){ return this.id == O.id; }
+
+  //get the length of this operation
+  int length() => this.is_insert ? (this.object as String).length : this.object as int;
+
+  //get the endindex of this operation
+  int end() => this.index + this.length();
 
   //A simple Clone deep copy utility that follows the Dart and Rust convention
   static Operation from(Operation O) => new Operation(O.is_insert, O.object, O.index, O.id, O.time_stamp, O.index);
@@ -27,15 +34,16 @@ class Operation<T>
   //increment the ID of this operation by one
   Operation roll_revision_forward(){ this.id++; return this; }
 
-  int length() => this.is_insert ? (this.object as String).length : this.object as int;
-
-  int end() => this.index + this.length();
-
+  //set the index of an operation
   Operation set_index(int index){ this.index = index; return this; }
 
-  //set the length of a delete operation to 0
-  Operation set_length_to_0() => set_length(0);
-
+  //set the length of an operation
   Operation set_length(int len){ this.object = len as T; return this; }
+
+  static bool equals(Operation Oa, Operation Ob)
+  {
+    return Oa.id == Ob.id && 
+           Oa.user_id == Ob.user_id;
+  }
 }
 
