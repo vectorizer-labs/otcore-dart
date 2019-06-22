@@ -1,7 +1,7 @@
-import 'Operation.dart';
+import './Transformation/character-wise/Operation.dart';
 import 'dart:collection';
 
-class DocState<T>
+class DocState<T, OP>
 {
   int user_id;
   List<Operation<T>> log = new List();
@@ -20,7 +20,7 @@ class DocState<T>
   HashMap<Operation, Operation> RA = new HashMap<Operation, Operation>();
 
   //the merge function empolyed by this DocState
-  //Could be GOT, GOTO, Raph's Algo, or P-GOTO
+  //Could be GOTO, Raph's Algo, or P-GOTO
   Function merge_op;
 
   DocState(int id, Function merge_op)
@@ -29,33 +29,6 @@ class DocState<T>
     this.merge_op = merge_op;
   }
 
-  Operation Check_LI(Operation OaPrime )
-  {
-    //return the original Oa if it exists
-    if(this.LI.containsKey(OaPrime)) return this.LI.remove(OaPrime);
-    return OaPrime;
-  }
 
-  void Save_LI(Operation Oa, Operation OaPrime)
-  {
-    //if the map doesn't have this key then add it
-    if(!this.LI.containsKey(OaPrime)) this.LI[OaPrime] = Oa;
-    else throw new Exception("Tried to Save_LI for an operation that already existed in the map!");
-  }
-
-  Operation Check_RA(Operation OaPrime, Operation Ob)
-  {
-    //return the Ob if it exists
-    if(this.RA[OaPrime] == Ob) return this.RA.remove(OaPrime);
-    //Otherwise return Oa Prime
-    else return OaPrime;
-  }
-
-  void Save_RA(Operation OaPrime, Operation Ob)
-  {
-    //if the map doesn't have this key then add it
-    if(!this.LI.containsKey(OaPrime)) this.LI[OaPrime] = Ob;
-    else throw new Exception("Tried to Save_LI for an operation that already existed in the map!");
-  }
     
 }
