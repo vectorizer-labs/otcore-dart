@@ -1,34 +1,73 @@
-import './Transformation/character-wise/Operation.dart';
-import 'dart:collection';
+import 'dart:indexed_db';
 
-class DocState<T, OP>
+import './Transformation/character-wise/Operation.dart';
+
+import 'Algo/Levien/LevienTree.dart';
+
+class DocState<T>
 {
   int user_id;
+
+  //the log of Operations in linear monotonic order
   List<Operation<T>> log = new List();
-  StringBuffer readable = new StringBuffer();
 
-  //The saved lost information of a transformed operation
-  //get(Oa') => Oa (the original untransformed operation)
-  //This relys on the objects hashcode so its imperitive that 
-  //Oa' is a deep copy of Oa to gaurantee they have unique hashcodes
-  HashMap<Operation, Operation> LI = new HashMap<Operation, Operation>();
+  //user visible space indices for saving selection
+  List<int> points = new List();
 
-  //The saved relative address of operations that have undefined ranges after transformation
-  //get(Oa') => Ob
-  //If it doesn't exist in the hashmap then its address isn't relative
-  //otherwise the returned operation is the operation its address is relative to
-  HashMap<Operation, Operation> RA = new HashMap<Operation, Operation>();
+  //
+  LevienTree deletes = new LevienTree();
 
-  //the merge function empolyed by this DocState
-  //Could be GOTO, Raph's Algo, or P-GOTO
-  Function merge_op;
+  //the user visible flat string
+  String str;
 
-  DocState(int id, Function merge_op)
+
+
+  DocState(int id)
   {
     this.user_id = id; 
-    this.merge_op = merge_op;
   }
 
+  void add(Operation O)
+  {
+    this.log.add(O);
+    //delete
+		if (!O.is_insert) deletFromString(O);
+    //insert
+    else insertIntoString(O);
+  }
 
-    
+  void deletFromString(Operation O)
+  {
+    //if we already deleted the character in question then 
+    //ignore this operation because the effect is the same 
+    if (this.deletes.contains(O.index)) return;
+
+    //otherwise get the string space index
+		int index = this.deletes.getStringSpaceIndex(O.index);
+    //delete it
+		this.deletes.insert(O.index);
+    //modify the actual string to reflect the change
+		this.str = this.str.substring(0, index) + this.str.substring(index + 1);
+    //update the points in the UI view
+    //move back every character after the delete by one
+    for (int i = 0; i < this.points.length; i++) if (this.points[i] > index) this.points[i] -= 1;
+  }
+
+  void insertIntoString(Operation O)
+  {
+    //update the deletes 
+    //by incrementing all the delete indexes after our insert by one
+    this.deletes.incrementIndicesPastIndex(O.index);
+    //get the string space index of our insert now that we've updated
+    int index = this.deletes.getStringSpaceIndex(O.index);
+
+    //modify the actual string to reflect the change
+    this.str = this.str.substring(0, index) + O.object + this.str.substring(index);
+
+    //update the points in the UI view
+    //move every character after the insert up by one
+    for (int i = 0; i < this.points.length; i++) if (this.points[i] > index) this.points[i] += 1;
+  }
+
 }
+
