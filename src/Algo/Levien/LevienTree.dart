@@ -5,6 +5,10 @@ class LevienTree
   Node<int> root;
 
   //xi_inv
+  //this function counts the number of indices
+  //that haven't been tombstoned(deleted)
+  //before the given index
+  //(thus giving us the effective user visible space index)
   int getStringSpaceIndex(int index)
   {
     Node<int> node = this.root;
@@ -22,6 +26,8 @@ class LevienTree
   }
 
   //xi
+  //this function counts the number of tombstones
+  //before the given index in O(logn)
   int getLogSpaceIndex(int index)
   {
     int base = 0;
@@ -29,9 +35,10 @@ class LevienTree
     while (node != null) {
       Node<int> left = node.left;
       int x = node.value - Node.size_of(left);
-      if (index < x) {
-        node = left;
-      } else {
+
+      if (index < x) node = left;
+      else 
+      {
         index = 1 + index - x;
         base += node.value;
         node = node.right;
@@ -64,6 +71,7 @@ class LevienTree
 	  }
   }
 
+  //union_one
   void insert(int index)
   {
     this.root = union_one(this.root, index);

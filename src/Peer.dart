@@ -1,9 +1,9 @@
-import 'dart:collection';
+import 'Transformation/character-wise/Operation.dart';
 
-class Peer<T>
+class Peer
 {
   int revision;
-  SplayTreeSet context;
+  Set<int>context;
 
   int getRevision() => this.revision;
 
