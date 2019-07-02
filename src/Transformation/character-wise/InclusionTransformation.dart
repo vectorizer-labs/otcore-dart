@@ -47,7 +47,7 @@ class InclusionTransformation
   static Operation IT_DD(Operation Oa, Operation Ob)
   {
     //The delete of Oa is before the delete of Ob so no transformation needed
-    if(Ob.index >= Oa.index) Oa;
+    if(Ob.index >= Oa.index) return Oa;
 
     //the start of the delete of Oa is after the delete of Ob
     //so adjust the index by the length of Ob 

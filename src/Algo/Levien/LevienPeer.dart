@@ -28,14 +28,18 @@ class LevienPeer extends Peer
   //Handles 3 cases as seen in the GOTO paper
   Operation merge_op(Operation O, DocState dc)
   {
-
+    if(repeatOP(O, dc)) return O;
+    else if(case2(O, dc)) return O;
+    else return merge(O, dc);
   }
 
-  //All Operation in EC(O) are causally preceding  O.
-  //It must be that DC(O) = EC(O) so no transformation needed
-  void case1(Operation O, DocState dc)
+
+  //we already have this operation in the log of our docstate
+  //but a peer sent us a duplicate
+  bool repeatOP(Operation O, DocState dc)
   {
-    if (this.revision < dc.log.length && dc.log[this.revision].id == O.id) 
+    //the log is
+    if (this.revision < dc.log.length && dc.log[this.revision].equals(O)) 
     {
 			// we already have this, roll revision forward
 			this.revision++;
@@ -44,29 +48,30 @@ class LevienPeer extends Peer
 				this.context.remove(dc.log[this.revision].id);
 				this.revision++;
 			}
-			return;
+			return true;
 		}
+
+    return false;
   }
 
-  //Operations causally preceeding O are listed in EC(O) before operations concurrent to O
-  //Since EO1 -> O, EO2 || O, EO3 || O, by transforming O against EO2 and EO3 in sequence
-  //we get EO such that DC(EO) = EC(O)
-  void case2(Operation O, DocState dc)
+  //
+  bool case2(Operation O, DocState dc)
   {
+    
     for (var ix = this.revision; ix < dc.log.length; ix++) 
     {
-			if (dc.log[ix].id == O.id) {
-				// we already have this, but can't roll revision forward
-				this.context.add(O.id);
-				return;
-			}
-		}
+      // we already have this, but can't roll revision forward
+      if(dc.log[ix].equals(O))
+      {
+        this.context.add(O.id);
+        return true;
+      }
+    }
+    return false;
   }
 
-  //At least one causally preceeding operation is positioned after a concurrent operation in EC(O).
-  //Since EO1 -> O, EO2 || O, EO3 -> O it must be that DC(O) = [EO1, EO3']
-  //where EO3' is the original form of EO3 when O was generated
-  Operation case3(Operation O, DocState dc)
+
+  Operation merge(Operation O, DocState dc)
   {
     // we don't have it, need to merge
 		List<List<int>> ins_list = new List();
@@ -80,7 +85,7 @@ class LevienPeer extends Peer
     //these operations are transformed against the non concurrent members of set T
     //until all the concurrent operations are at the end of the log
 		LevienTree S = new LevienTree();
-  
+
     //loop backwards through the log building up patches S and T
     //until we reach the revision this context is up to date on
 		for (var ix = dc.log.length - 1; ix >= this.revision; ix--) 
@@ -94,7 +99,6 @@ class LevienPeer extends Peer
       //get the real log space index
 			int i = S.getLogSpaceIndex(current.index);
 
-
 			if (!this.context.contains(current.id)) 
       {
 				ins_list.add([T.getStringSpaceIndex(i), current.user_id]);
@@ -103,6 +107,8 @@ class LevienPeer extends Peer
 			S.insert(i);
 		}
 		for (var i = ins_list.length - 1; i >= 0; i--) O = transform_ins(O, ins_list[i][0], ins_list[i][1]);
+
+    return O;
   }
   
   Operation transform_ins(Operation op1, int ix, int user_id) 

@@ -40,10 +40,9 @@ class Operation<T>
   //set the length of an operation
   Operation set_length(int len){ this.object = len as T; return this; }
 
-  static bool equals(Operation Oa, Operation Ob)
+  bool equals(Operation O)
   {
-    return Oa.id == Ob.id && 
-           Oa.user_id == Ob.user_id;
+    return this.id == O.id && this.user_id == O.user_id && this.time_stamp == O.time_stamp;
   }
 }
 
