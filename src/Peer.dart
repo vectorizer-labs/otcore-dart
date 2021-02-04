@@ -6,6 +6,4 @@ class Peer
   Set<int>context;
 
   int getRevision() => this.revision;
-
-  
 }

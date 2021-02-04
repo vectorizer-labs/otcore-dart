@@ -36,8 +36,6 @@ class DocState<T>
   //the user visible flat string
   String str;
 
-
-
   DocState(int id)
   {
     this.user_id = id; 
@@ -87,6 +85,10 @@ class DocState<T>
   //gets the log space index for this docstate
   //used for creating new insert operations in the GUI
   int getLogSpaceIndex(int index) => this.deletes.getLogSpaceIndex(index);
+
+  String get doc_str{
+    return str;
+  }
 
 }
 
